@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarouselCraft — Independent Slide Prompt Engine</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=Playfair+Display:wght@700&display=swap');
+
+        :root {
+            --bg-dark: #0A0A0A;
+            --accent: #F59E0B;
+            --accent-light: rgba(245, 158, 11, 0.1);
+            --bg-sidebar: #f8f8f7;
+            --border-color: #e0e0e0;
+            --text-dark: #333;
+            --text-light: #fff;
+            --text-muted: #888;
+            --error-red: #EF4444;
+            --error-bg: #FEF2F2;
+            --font-logo: 'Playfair Display', serif;
+            --font-ui: 'DM Sans', sans-serif;
+            --radius-card: 12px;
+            --radius-sm: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-ui);
+            background-color: #fff;
+            color: var(--text-dark);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* HEADER */
+        header {
+            background-color: var(--bg-dark);
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .dot-accent {
+            width: 10px;
+            height: 10px;
+            background-color: var(--accent);
+            border-radius: 50%;
+        }
+
+        .logo-text {
+            font-family: var(--font-logo);
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-light);
+        }
+
+        .subtitle {
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .badge-ai {
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            color: #aaa;
+            font-size: 11px;
+            border-radius: 20px;
+            padding: 4px 10px;
+            font-weight: 500;
+        }
+
+        /* LAYOUT */
+        .layout-container {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 60px);
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 340px;
+            background-color: var(--bg-sidebar);
+            border-right: 0.5px solid var(--border-color);
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* CUSTOM SCROLLBAR */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #bbb; }
+
+        .section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding-bottom: 24px;
+            border-bottom: 0.5px solid var(--border-color);
+        }
+        .section:last-child { border-bottom: none; padding-bottom: 0; }
+
+        .section-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+        }
+
+        .req { color: var(--accent); margin-left: 4px; }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 0.5px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-ui);
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+            background: #fff;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            border-color: var(--accent);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 64px;
+        }
+
+        .char-counter {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-align: right;
+            margin-top: 2px;
+        }
+        .char-counter.warning { color: var(--accent); font-weight: 600; }
+
+        /* GRID SELECTORS */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .selectable-card {
+            border: 0.5px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 10px;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .selectable-card:hover { border-color: #bbb; }
+        .selectable-card.active {
+            border-color: var(--accent);
+            background-color: var(--accent-light);
+        }
+
+        .card-title { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        .card-desc { font-size: 10px; color: var(--text-muted); line-height: 1.3; }
+
+        /* PILLS */
+        .pill-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .pill {
+            padding: 6px 12px;
+            border: 0.5px solid var(--border-color);
+            border-radius: 20px;
+            font-size: 12px;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .pill:hover { border-color: #aaa; }
+        .pill.active {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            border-color: var(--bg-dark);
+        }
+
+        /* RATIO CARDS */
+        .ratio-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 8px;
+            border: 0.5px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            background: #fff;
+        }
+        .ratio-card.active {
+            border-color: var(--accent);
+            background-color: var(--accent-light);
+        }
+        .ratio-box {
+            border: 1.5px solid #ccc;
+            border-radius: 2px;
+        }
+        .ratio-card.active .ratio-box { border-color: var(--accent); }
+        .ratio-1-1 { width: 24px; height: 24px; }
+        .ratio-4-5 { width: 20px; height: 25px; }
+        .ratio-9-16 { width: 14px; height: 25px; }
+        .ratio-label { font-size: 11px; font-weight: 600; }
+        .ratio-sub { font-size: 9px; color: var(--text-muted); }
+
+        /* UPLOAD ZONE */
+        .upload-zone {
+            border: 1px dashed #ccc;
+            border-radius: var(--radius-sm);
+            padding: 14px;
+            text-align: center;
+            background: #fafafa;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .upload-zone:hover { background: #f0f0f0; border-color: #aaa; }
+        .upload-zone input[type="file"] {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0; cursor: pointer;
+        }
+        .upload-icon { font-size: 20px; margin-bottom: 4px; color: #888; }
+        .upload-text { font-size: 12px; font-weight: 500; }
+        .upload-hint { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+        .photo-list { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+        .photo-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 8px;
+            background: #fff;
+            border: 0.5px solid var(--border-color);
+            border-radius: var(--radius-sm);
+        }
+        .photo-info { display: flex; align-items: center; gap: 8px; }
+        .photo-thumb { width: 32px; height: 32px; border-radius: 4px; object-fit: cover; }
+        .photo-name { font-size: 11px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .photo-badge { font-size: 9px; background: #eee; padding: 2px 6px; border-radius: 10px; color: #555; }
+        .btn-remove { background: none; border: none; color: #ff4d4f; cursor: pointer; font-size: 14px; padding: 0 4px; }
+
+        /* COLOR SCHEME */
+        .color-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 4px 0;
+        }
+        .color-circle {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s, border 0.2s;
+            border: 1px solid #ddd;
+        }
+        .color-circle.active {
+            border: 2px solid #333;
+            transform: scale(1.15);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* TOGGLE SWITCH */
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .toggle-label { font-size: 12px; color: var(--text-dark); }
+        .toggle-switch {
+            width: 36px;
+            height: 20px;
+            background-color: #ccc;
+            border-radius: 20px;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .toggle-switch.active { background-color: var(--accent); }
+        .toggle-dot {
+            width: 14px;
+            height: 14px;
+            background-color: #fff;
+            border-radius: 50%;
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            transition: transform 0.3s;
+        }
+        .toggle-switch.active .toggle-dot { transform: translateX(16px); }
+
+        /* GENERATE BUTTON */
+        .btn-generate {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s;
+            margin-top: 10px;
+        }
+        .btn-generate:hover { transform: translateY(-1px); }
+        .btn-generate:disabled { background-color: #999; cursor: not-allowed; transform: none; }
+        .btn-generate .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+        
+        /* LOADING */
+        .loading-dots { display: none; gap: 4px; }
+        .btn-generate.loading .btn-text, .btn-generate.loading .dot, .btn-generate.loading svg { display: none; }
+        .btn-generate.loading .loading-dots { display: flex; }
+        .loading-dot {
+            width: 6px; height: 6px; background: var(--accent); border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0.6); } 40% { transform: scale(1); } }
+
+        /* OUTPUT PANEL */
+        .output-panel {
+            flex: 1;
+            background-color: #fff;
+            overflow-y: auto;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            text-align: center;
+        }
+        .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+        .empty-text { font-size: 16px; font-weight: 500; margin-bottom: 8px; color: #555; }
+        .empty-hint { font-size: 13px; max-width: 300px; line-height: 1.5; }
+
+        /* ERROR BANNER */
+        .error-banner {
+            display: none;
+            background-color: var(--error-bg);
+            border: 1px solid var(--error-red);
+            color: var(--error-red);
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 16px;
+            font-size: 13px;
+            align-items: center;
+            gap: 8px;
+        }
+        .error-banner.visible { display: flex; }
+
+        /* INSTRUCTION BANNER */
+        .instruction-banner {
+            background-color: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #1D4ED8;
+            padding: 14px 18px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            line-height: 1.5;
+        }
+        .instruction-banner .icon {
+            font-size: 18px;
+        }
+        .instruction-banner b {
+            font-weight: 700;
+        }
+
+        .output-content {
+            display: none;
+            padding: 32px 40px;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .output-content.visible { display: flex; }
+
+        /* OUTPUT HEADER */
+        .out-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .out-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+        .out-meta { font-size: 12px; color: var(--text-muted); }
+        .out-actions { display: flex; gap: 8px; }
+        .btn-action {
+            padding: 8px 16px; font-size: 12px; font-weight: 600; border-radius: var(--radius-sm); cursor: pointer; border: 1px solid var(--border-color); background: #fff; transition: all 0.2s;
+        }
+        .btn-action.primary { background: var(--bg-dark); color: #fff; border-color: var(--bg-dark); }
+        .btn-action:hover { opacity: 0.9; }
+
+        /* FLOW PREVIEW BAR */
+        .flow-preview { display: flex; align-items: center; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+        .flow-step { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+        .flow-chip { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .flow-num { width: 24px; height: 24px; background: var(--bg-dark); color: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+        .flow-label { font-size: 10px; font-weight: 600; color: #555; text-align: center; max-width: 90px; }
+        .flow-arrow { color: #ccc; font-size: 14px; margin-top: -16px; }
+
+        /* SLIDE CARDS */
+        .slide-list { display: flex; flex-direction: column; gap: 24px; }
+        .slide-card { border: 1px solid var(--border-color); border-radius: var(--radius-card); overflow: hidden; }
+        .slide-header { background: #fafafa; padding: 12px 16px; display: flex; align-items: center; border-bottom: 1px solid var(--border-color); gap: 12px; }
+        .slide-num-box { background: var(--bg-dark); color: var(--accent); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-weight: 700; font-size: 12px; }
+        .slide-name { font-weight: 600; font-size: 14px; flex: 1; }
+        
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+        .bg-hero { background: rgba(245, 158, 11, 0.2); color: #B45309; }
+        .bg-problem { background: rgba(249, 115, 22, 0.2); color: #C2410C; }
+        .bg-solution { background: rgba(34, 197, 94, 0.2); color: #15803D; }
+        .bg-feature { background: rgba(132, 204, 22, 0.2); color: #4D7C0F; }
+        .bg-info { background: rgba(59, 130, 246, 0.2); color: #1D4ED8; }
+        .bg-testimonial { background: rgba(168, 85, 247, 0.2); color: #7E22CE; }
+        .bg-cta { background: rgba(236, 72, 153, 0.2); color: #BE185D; }
+        .bg-setup { background: rgba(59, 130, 246, 0.2); color: #1D4ED8; }
+
+        .slide-body { position: relative; background: var(--bg-dark); padding: 20px; }
+        .slide-prompt { font-family: monospace; font-size: 13px; color: #ddd; white-space: pre-wrap; line-height: 1.6; margin: 0; overflow-x: auto; }
+        .btn-copy-small { position: absolute; top: 12px; right: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 4px 10px; font-size: 11px; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
+        .btn-copy-small:hover { background: rgba(255,255,255,0.2); }
+
+        @media (max-width: 768px) {
+            .layout-container { flex-direction: column; overflow-y: auto; height: auto; display: block; }
+            .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border-color); max-height: none; overflow: visible; }
+            .output-panel { overflow: visible; max-height: none; }
+            body { overflow: auto; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-area">
+            <div class="dot-accent"></div>
+            <div class="logo-text">CarouselCraft</div>
+            <div class="subtitle">Independent Slide Prompt Engine</div>
+        </div>
+        <div class="badge-ai">AI-Powered</div>
+    </header>
+
+    <div class="layout-container">
+        <!-- SIDEBAR FORM -->
+        <aside class="sidebar">
+            
+            <!-- SECTION 1 -->
+            <div class="section">
+                <div class="section-label">Brand Identity</div>
+                
+                <div class="form-group">
+                    <label>Nama Brand <span class="req">*</span></label>
+                    <input type="text" id="brandName" placeholder="cth: Wanderlust Travel Co." maxlength="60" oninput="CarouselApp.updateCharCount('brandName', 60)">
+                    <div class="char-counter" id="brandName-count">0 / 60</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Tagline / Headline Utama <span class="req">*</span></label>
+                    <input type="text" id="headline" placeholder="cth: Jelajahi Dunia, Temukan Dirimu" maxlength="80" oninput="CarouselApp.updateCharCount('headline', 80)">
+                    <div class="char-counter" id="headline-count">0 / 80</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Niche / Industri <span class="req">*</span></label>
+                    <div class="grid-2" id="nicheGrid">
+                        <div class="selectable-card active" data-val="travel"><div class="card-title">✈️ Travel</div><div class="card-desc">Travel & Wisata</div></div>
+                        <div class="selectable-card" data-val="culinary"><div class="card-title">🍔 Kuliner</div><div class="card-desc">F&B, Resto, Cafe</div></div>
+                        <div class="selectable-card" data-val="fashion"><div class="card-title">👗 Fashion</div><div class="card-desc">Apparel & Style</div></div>
+                        <div class="selectable-card" data-val="property"><div class="card-title">🏠 Properti</div><div class="card-desc">Real Estate & Kos</div></div>
+                        <div class="selectable-card" data-val="tech"><div class="card-title">💻 Teknologi</div><div class="card-desc">SaaS & Gadget</div></div>
+                        <div class="selectable-card" data-val="beauty"><div class="card-title">✨ Beauty</div><div class="card-desc">Skincare & Makeup</div></div>
+                        <div class="selectable-card" data-val="education"><div class="card-title">📚 Edukasi</div><div class="card-desc">Kursus & Sekolah</div></div>
+                        <div class="selectable-card" data-val="other"><div class="card-title">📦 Lainnya</div><div class="card-desc">Umum / Bisnis</div></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Brand Positioning (Tier) <span class="req">*</span></label>
+                    <div class="grid-2" id="positioningGrid">
+                        <div class="selectable-card" data-val="budget"><div class="card-title">🛒 Budget / Mass</div><div class="card-desc">Practical, Promotional</div></div>
+                        <div class="selectable-card" data-val="mid_market"><div class="card-title">💼 Mid-Market</div><div class="card-desc">Commercial, Trustworthy</div></div>
+                        <div class="selectable-card active" data-val="premium"><div class="card-title">✨ Premium</div><div class="card-desc">Sophisticated, Clean</div></div>
+                        <div class="selectable-card" data-val="luxury"><div class="card-title">💎 Luxury</div><div class="card-desc">Exclusive, Minimal</div></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Brand Recognition Level <span class="req">*</span></label>
+                    <div class="grid-2" id="recognitionGrid">
+                        <div class="selectable-card" data-val="known"><div class="card-title">🌍 Known Brand</div><div class="card-desc">Apple, Nike, dll</div></div>
+                        <div class="selectable-card active" data-val="local"><div class="card-title">📍 Local Brand</div><div class="card-desc">UMKM / Lokal</div></div>
+                        <div class="selectable-card" data-val="new"><div class="card-title">✨ New Brand</div><div class="card-desc">Belum dikenal</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2 -->
+            <div class="section">
+                <div class="section-label">Jumlah & Foto Carousel</div>
+                
+                <div class="form-group">
+                    <label>Jumlah Slide (Visual) <span class="req">*</span></label>
+                    <div class="pill-group" id="slidePills">
+                        <div class="pill" data-val="5">5 Slide</div>
+                        <div class="pill active" data-val="6">6 Slide</div>
+                        <div class="pill" data-val="7">7 Slide</div>
+                        <div class="pill" data-val="8">8 Slide</div>
+                        <div class="pill" data-val="9">9 Slide</div>
+                        <div class="pill" data-val="10">10 Slide</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Upload Foto (Opsional)</label>
+                    <div class="upload-zone" id="uploadZone">
+                        <div class="upload-icon">📸</div>
+                        <div class="upload-text">Klik atau drag foto ke sini</div>
+                        <div class="upload-hint">PNG/JPG/WebP maks 5MB</div>
+                        <input type="file" id="fileInput" multiple accept="image/*">
+                    </div>
+                    <div class="photo-list" id="photoList"></div>
+                </div>
+            </div>
+
+            <!-- SECTION 3 -->
+            <div class="section">
+                <div class="section-label">Konten, Pesan & Emosi</div>
+                
+                <div class="form-group">
+                    <label>Tujuan Kampanye Utama <span class="req">*</span></label>
+                    <div class="grid-2" id="goalGrid">
+                        <div class="selectable-card active" data-val="awareness"><div class="card-title">🌟 Awareness</div><div class="card-desc">Brand recall</div></div>
+                        <div class="selectable-card" data-val="education"><div class="card-title">📚 Edukasi</div><div class="card-desc">Insight & Solusi</div></div>
+                        <div class="selectable-card" data-val="lead_gen"><div class="card-title">🧲 Lead Gen</div><div class="card-desc">Capture Inquiries</div></div>
+                        <div class="selectable-card" data-val="sales"><div class="card-title">💰 Penjualan</div><div class="card-desc">Direct Conversion</div></div>
+                        <div class="selectable-card" data-val="promo"><div class="card-title">🏷️ Promo</div><div class="card-desc">Urgency & Offer</div></div>
+                        <div class="selectable-card" data-val="launch"><div class="card-title">🚀 Peluncuran</div><div class="card-desc">New Product</div></div>
+                        <div class="selectable-card" data-val="branding"><div class="card-title">✨ Branding</div><div class="card-desc">Identity & Emotion</div></div>
+                        <div class="selectable-card" data-val="testimonial"><div class="card-title">💬 Testimoni</div><div class="card-desc">Trust & Proof</div></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Emotional Angle <span class="req">*</span></label>
+                    <div class="pill-group" id="emotionPills">
+                        <div class="pill active" data-val="trust">Trust</div>
+                        <div class="pill" data-val="transformation">Transformation</div>
+                        <div class="pill" data-val="prestige">Prestige</div>
+                        <div class="pill" data-val="luxury">Luxury</div>
+                        <div class="pill" data-val="safety">Safety</div>
+                        <div class="pill" data-val="happiness">Happiness</div>
+                        <div class="pill" data-val="spiritual">Spiritual</div>
+                        <div class="pill" data-val="achievement">Achievement</div>
+                        <div class="pill" data-val="freedom">Freedom</div>
+                        <div class="pill" data-val="convenience">Convenience</div>
+                        <div class="pill" data-val="community">Community</div>
+                        <div class="pill" data-val="innovation">Innovation</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Visual Focus <span class="req">*</span></label>
+                    <div class="grid-2" id="visualFocusGrid">
+                        <div class="selectable-card active" data-val="product"><div class="card-title">📦 Product First</div></div>
+                        <div class="selectable-card" data-val="human"><div class="card-title">👤 Human First</div></div>
+                        <div class="selectable-card" data-val="lifestyle"><div class="card-title">🌴 Lifestyle First</div></div>
+                        <div class="selectable-card" data-val="feature"><div class="card-title">⚙️ Feature First</div></div>
+                        <div class="selectable-card" data-val="typography"><div class="card-title">Aa Typography First</div></div>
+                        <div class="selectable-card" data-val="brand"><div class="card-title">✨ Brand First</div></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Gaya Penulisan Headline</label>
+                    <div class="grid-2" id="headlineStyleGrid">
+                        <div class="selectable-card active" data-val="direct"><div class="card-title">⚡ Direct Response</div></div>
+                        <div class="selectable-card" data-val="premium"><div class="card-title">✨ Premium</div></div>
+                        <div class="selectable-card" data-val="editorial"><div class="card-title">📖 Editorial</div></div>
+                        <div class="selectable-card" data-val="viral"><div class="card-title">🔥 Viral</div></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Visual Complexity <span class="req">*</span></label>
+                    <div class="grid-2" id="complexityGrid">
+                        <div class="selectable-card" data-val="simple"><div class="card-title">🍃 Simple</div><div class="card-desc">Minimal, Hero fokus</div></div>
+                        <div class="selectable-card active" data-val="balanced"><div class="card-title">⚖️ Balanced</div><div class="card-desc">Proporsional</div></div>
+                        <div class="selectable-card" data-val="rich"><div class="card-title">💎 Rich</div><div class="card-desc">Tabel, Badge, Pricing</div></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Deskripsi Produk / Layanan <span class="req">*</span></label>
+                    <textarea id="productDesc" placeholder="Jelaskan secara singkat apa yang Anda tawarkan..." maxlength="400" oninput="CarouselApp.updateCharCount('productDesc', 400, 350)"></textarea>
+                    <div class="char-counter" id="productDesc-count">0 / 400</div>
+                </div>
+
+                <div class="form-group">
+                    <label>USP / Unique Selling Proposition (Opsional)</label>
+                    <input type="text" id="benefits" placeholder="Apa yang membuat bisnis Anda berbeda? (cth: Garansi 30 hari)">
+                </div>
+
+                <div class="form-group">
+                    <label>Call-to-Action (Opsional)</label>
+                    <input type="text" id="cta" placeholder="cth: Klik link di bio untuk promo">
+                </div>
+            </div>
+
+            <!-- SECTION 4 -->
+            <div class="section">
+                <div class="section-label">Desain Visual</div>
+                
+                <div class="form-group">
+                    <label>Platform Publish</label>
+                    <div class="pill-group" id="platformPills">
+                        <div class="pill active" data-val="instagram">Instagram</div>
+                        <div class="pill" data-val="linkedin">LinkedIn</div>
+                        <div class="pill" data-val="tiktok">TikTok</div>
+                        <div class="pill" data-val="facebook">Facebook</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Rasio / Ukuran</label>
+                    <div class="grid-2" style="grid-template-columns: 1fr 1fr 1fr;" id="ratioCards">
+                        <div class="ratio-card active" data-val="1:1">
+                            <div class="ratio-box ratio-1-1"></div>
+                            <div style="text-align:center">
+                                <div class="ratio-label">1:1</div>
+                                <div class="ratio-sub">1080x1080</div>
+                            </div>
+                        </div>
+                        <div class="ratio-card" data-val="4:5">
+                            <div class="ratio-box ratio-4-5"></div>
+                            <div style="text-align:center">
+                                <div class="ratio-label">4:5</div>
+                                <div class="ratio-sub">1080x1350</div>
+                            </div>
+                        </div>
+                        <div class="ratio-card" data-val="9:16">
+                            <div class="ratio-box ratio-9-16"></div>
+                            <div style="text-align:center">
+                                <div class="ratio-label">9:16</div>
+                                <div class="ratio-sub">1080x1920</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Gaya Desain</label>
+                    <div class="grid-2" id="styleGrid">
+                        <div class="selectable-card active" data-val="modern-minimal"><div class="card-title">Modern Minimal</div></div>
+                        <div class="selectable-card" data-val="bold-graphic"><div class="card-title">Bold Graphic</div></div>
+                        <div class="selectable-card" data-val="warm-editorial"><div class="card-title">Warm Editorial</div></div>
+                        <div class="selectable-card" data-val="luxury"><div class="card-title">Luxury Dark</div></div>
+                        <div class="selectable-card" data-val="playful-pop"><div class="card-title">Playful Pop</div></div>
+                        <div class="selectable-card" data-val="corporate-clean"><div class="card-title">Corporate Clean</div></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Skema Warna</label>
+                    <div class="color-grid" id="colorPicker">
+                        <div class="color-circle active" data-val="midnight" style="background-color: #0A0A0A;" title="Midnight Black"></div>
+                        <div class="color-circle" data-val="ocean" style="background-color: #1B4FDB;" title="Ocean Blue"></div>
+                        <div class="color-circle" data-val="forest" style="background-color: #1A5C3B;" title="Forest Green"></div>
+                        <div class="color-circle" data-val="terracotta" style="background-color: #C4512F;" title="Terracotta"></div>
+                        <div class="color-circle" data-val="blush" style="background-color: #D4537E;" title="Blush Pink"></div>
+                        <div class="color-circle" data-val="golden" style="background-color: #C48C1A;" title="Golden"></div>
+                        <div class="color-circle" data-val="violet" style="background-color: #5B3FB5;" title="Deep Violet"></div>
+                        <div class="color-circle" data-val="cream" style="background-color: #E8D5B0;" title="Warm Cream"></div>
+                        <div class="color-circle" data-val="custom" style="background: linear-gradient(45deg, red, orange, yellow, green, blue, purple);" title="Custom"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 5 -->
+            <div class="section">
+                <div class="section-label">Opsi Lanjutan</div>
+                
+                <div class="form-group" style="gap: 12px;">
+                    <div class="toggle-row">
+                        <div class="toggle-label">Sertakan teks body di setiap slide</div>
+                        <div class="toggle-switch active" data-id="opt-body" onclick="CarouselApp.toggleSwitch(this)"><div class="toggle-dot"></div></div>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-label">Tambahkan elemen ikon / ilustrasi</div>
+                        <div class="toggle-switch active" data-id="opt-icons" onclick="CarouselApp.toggleSwitch(this)"><div class="toggle-dot"></div></div>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-label">Gunakan foto upload sebagai referensi</div>
+                        <div class="toggle-switch active" data-id="opt-photo" onclick="CarouselApp.toggleSwitch(this)"><div class="toggle-dot"></div></div>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-label">Generate nama font yang konsisten</div>
+                        <div class="toggle-switch active" data-id="opt-font" onclick="CarouselApp.toggleSwitch(this)"><div class="toggle-dot"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label>Asset Mode</label>
+                <div class="grid-2" id="assetModeGrid">
+                    <div class="selectable-card" data-val="ai"><div class="card-title">🤖 AI Visual Mode</div><div class="card-desc">AI Generated Elements</div></div>
+                    <div class="selectable-card active" data-val="brand"><div class="card-title">💎 Brand Asset Mode</div><div class="card-desc">(Recommended)</div></div>
+                </div>
+            </div>
+
+            <button class="btn-generate" id="generateBtn" onclick="CarouselApp.handleGenerate()">
+                <div class="dot"></div>
+                <span class="btn-text">Generate Prompt</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                <div class="loading-dots">
+                    <div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div>
+                </div>
+            </button>
+        </aside>
+
+        <!-- OUTPUT PANEL -->
+        <main class="output-panel">
+            <div class="empty-state" id="emptyState">
+                <div class="empty-icon">🔲</div>
+                <div class="empty-text">Prompt carousel belum dibuat</div>
+                <div class="empty-hint">Isi form di sebelah kiri lalu klik "Generate Prompt" untuk menghasilkan skrip desain poster media sosial yang siap pakai.</div>
+            </div>
+
+            <div class="output-content" id="outputContent">
+                
+                <!-- Error Banner -->
+                <div class="error-banner" id="errorBanner">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    <span id="errorMessage">Gagal menghasilkan prompt. Menggunakan fallback lokal.</span>
+                </div>
+
+                <div class="out-header">
+                    <div>
+                        <div class="out-title">Independent Slide Prompts Ready</div>
+                        <div class="out-meta" id="outMetaInfo">6 Slide • Instagram • Modern Minimal</div>
+                    </div>
+                    <div class="out-actions">
+                        <button class="btn-action" onclick="CarouselApp.copyAll()">Salin Semua</button>
+                        <button class="btn-action primary" onclick="alert('Prompt disimulasikan terkirim ke chat!')">Kirim ke Chat</button>
+                    </div>
+                </div>
+
+                <!-- INSTRUCTION BANNER -->
+                <div class="instruction-banner">
+                    <div class="icon">💡</div>
+                    <div>
+                        <b>Panduan Penggunaan:</b> Silakan salin <b>satu per satu</b> kolom prompt di bawah ini ke dalam ChatGPT, Gemini, Claude, ataupun semua jenis AI <b>(mode gambar atau image)</b>. Jangan digabung menjadi satu prompt sekaligus agar AI dapat fokus memproses visual tiap slide secara maksimal.
+                    </div>
+                </div>
+
+                <div class="flow-preview" id="flowPreview">
+                    <!-- Flow chips rendered here -->
+                </div>
+
+                <div class="slide-list" id="slideList" style="margin-top: 16px;">
+                    <!-- Slide cards rendered here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        /**
+         * SENIOR ARCHITECTURE REWRITE
+         * Modules: Constants, State, ValidationLayer, PromptAPI, FallbackEngine, UIController
+         */
+
+        const DATA = {
+            positioningData: {
+                budget: { title: 'Budget / Mass Market', characteristics: 'Practical, accessible, high-value design system. Clear offers, bold pricing, high visibility, simple layouts, strong promotional elements.', typography: 'Large bold headlines, highly legible, strong visual weight.', tone: 'Affordable, Friendly, Accessible', photography: 'Lifestyle imagery, real people, product-focused.', layout: 'Dense layout, more information, more promotional content. High efficiency.', color: 'Higher saturation, promotional contrast, bright colors.', cta: 'Strong direct CTA (Examples: Pesan Sekarang, Daftar Hari Ini, Hubungi Kami).', headlineStyle: 'Direct, Promotional, Benefit-driven (Examples: Harga Mulai 299 Ribu, Diskon Hingga 50%, Paket Terlaris).', priority: 'Value > Offer > Conversion', rule: 'Budget brands should never look overly minimal. Make offers extremely clear.' },
+                mid_market: { title: 'Mid-Market / Commercial', characteristics: 'Balanced commercial design. Professional, modern, clean, trustworthy.', typography: 'Structured hierarchy, clear distinction between headings and body.', tone: 'Reliable, Modern, Approachable', photography: 'Commercial marketing photography, high-quality studio/lifestyle.', layout: 'Balanced layout, optimal white space, easy to read.', color: 'Balanced commercial palette, approachable and trustworthy.', cta: 'Clear actionable CTA (Examples: Pelajari Lebih Lanjut, Mulai Langkah Baru, Konsultasi Gratis).', headlineStyle: 'Professional, Clear, Benefit-focused (Examples: Liburan Nyaman Tanpa Ribet, Solusi Praktis Untuk Anda).', priority: 'Trust > Value > Conversion', rule: 'Mid-Market brands should maintain balance. Professional but accessible.' },
+                premium: { title: 'Premium', characteristics: 'Agency-level brand experience. Refined spacing, clean layouts, premium composition, strong brand consistency.', typography: 'Elegant hierarchy, large headlines, controlled body text.', tone: 'Professional, Sophisticated, Confident', photography: 'Commercial editorial photography, highly curated.', layout: 'More breathing room, cleaner composition, strategic use of white space.', color: 'Controlled palette, 2–3 primary colors, tasteful contrast.', cta: 'Soft persuasive CTA (Examples: Explore More, Discover The Experience, Learn More).', headlineStyle: 'Sophisticated, Confident, Aspirational (Examples: Experience Travel Reimagined, Perjalanan Dirancang Lebih Baik).', priority: 'Brand Perception > Trust > Conversion', rule: 'Premium brands should never feel crowded. Whitespace is a premium asset.' },
+                luxury: { title: 'Luxury', characteristics: 'World-class luxury brand campaign. Minimal information, maximum elegance, high-end editorial composition.', typography: 'Large refined headlines, elegant serif/sans-serif, minimal supporting text.', tone: 'Exclusive, Prestigious, Timeless, Aspirational', photography: 'Luxury advertising photography, editorial magazine quality, high-fashion campaign aesthetics.', layout: 'Maximum whitespace, minimal content, editorial balance, high-end sophisticated spacing.', color: 'Muted palette, sophisticated contrast, minimal accent usage.', cta: 'Minimal subtle CTA (Examples: Request Information, Private Consultation, Explore The Collection).', headlineStyle: 'Emotional, Elegant, Minimal (Examples: Beyond The Destination, Crafted For The Exceptional).', priority: 'Prestige > Emotion > Desire', rule: 'Luxury brands should never look promotional. Avoid massive price tags or loud discounts.' }
+            },
+            emotionData: {
+                trust: { title: 'Trust', focus: 'Credibility, Safety, Reliability, Professionalism', mood: 'Clean, Stable, Structured', photo: 'Professional people, Customer interactions, Real-world scenarios', headlines: 'Terpercaya Sejak 2015, Dipercaya Ribuan Pelanggan, Partner Yang Bisa Diandalkan' },
+                transformation: { title: 'Transformation', focus: 'Before vs After, Growth, Improvement', mood: 'Dynamic, Inspirational', photo: 'Success outcomes, Lifestyle improvements', headlines: 'Mulai Perubahan Anda, Dari Biasa Menjadi Luar Biasa, Transformasi Dimulai Hari Ini' },
+                prestige: { title: 'Prestige', focus: 'Status, Recognition, Exclusivity', mood: 'Confident, Elite', photo: 'Luxury environments, Executive lifestyle', headlines: 'Elevate Your Standard, Designed For Leaders, Built For Those Who Expect More' },
+                spiritual: { title: 'Spiritual', focus: 'Meaning, Connection, Inner Peace, Purpose', mood: 'Warm, Calm, Sacred', photo: 'Religious landmarks, Meaningful moments, Reflective atmosphere', headlines: 'Lebih Dekat Dengan Tujuan Sejati, Perjalanan Yang Penuh Makna, Saatnya Menjawab Panggilan Hati' },
+                convenience: { title: 'Convenience', focus: 'Ease, Comfort, Simplicity', mood: 'Friendly, Light', photo: 'Comfortable lifestyle', headlines: 'Semua Jadi Lebih Mudah, Praktis Tanpa Ribet, Fokus Pada Yang Penting' },
+                luxury: { title: 'Luxury', focus: 'Elegance, Exclusivity, High-end Desire', mood: 'Sophisticated, Minimal, Prestigious', photo: 'High-fashion, Premium aspirational products', headlines: 'Crafted For The Exceptional, Pure Luxury, Uncompromised Quality' },
+                safety: { title: 'Safety', focus: 'Protection, Security, Peace of Mind', mood: 'Secure, Solid, Calming', photo: 'Protected environments, Safe interactions', headlines: 'Keamanan Anda Prioritas Kami, Perlindungan Maksimal Tanpa Kompromi' },
+                happiness: { title: 'Happiness', focus: 'Joy, Delight, Positivity', mood: 'Vibrant, Cheerful, Bright', photo: 'Smiling faces, Joyful moments', headlines: 'Temukan Kebahagiaan Anda, Wujudkan Senyum Setiap Hari' },
+                achievement: { title: 'Achievement', focus: 'Success, Winning, Goal-reaching', mood: 'Powerful, Victorious, Driven', photo: 'Celebration, Milestones, Awards', headlines: 'Raih Target Anda, Wujudkan Impian Menjadi Nyata' },
+                freedom: { title: 'Freedom', focus: 'Liberation, Independence, No Limits', mood: 'Open, Expansive, Airy', photo: 'Wide landscapes, Carefree lifestyle', headlines: 'Bebas Tanpa Batas, Jelajahi Kebebasan Anda' },
+                community: { title: 'Community', focus: 'Belonging, Togetherness, Support', mood: 'Warm, Inclusive, Connected', photo: 'Group activities, Supportive networks', headlines: 'Bersama Kita Bisa, Menjadi Bagian Dari Keluarga Besar' },
+                innovation: { title: 'Innovation', focus: 'Future, Tech, Disruption', mood: 'Futuristic, Sharp, Cutting-edge', photo: 'Modern tech, Forward-looking concepts', headlines: 'Masa Depan Ada Di Sini, Inovasi Tanpa Henti' }
+            },
+            visualFocusData: {
+                product: { title: 'Product First', rules: 'The product is always the hero. Products occupy the primary visual area. Background and supporting elements must remain secondary. Avoid oversized text that competes with the product.' },
+                human: { title: 'Human First', rules: 'Humans become the visual anchor. Show authentic expressions. Use people to create emotional connection. Products become supporting elements.' },
+                lifestyle: { title: 'Lifestyle First', rules: 'Show the desired lifestyle outcome. The audience should imagine themselves inside the scene. Environment is more important than the product itself.' },
+                feature: { title: 'Feature First', rules: 'Features become the main story. Use diagrams, screens, infographics, data visualization. Minimize decorative imagery.' },
+                typography: { title: 'Typography First', rules: 'Typography becomes the hero. Large headlines. Minimal imagery. Swiss-grid inspired layouts. Strong visual hierarchy.' },
+                brand: { title: 'Brand First', rules: 'Brand identity dominates. Logos, brand symbols, brand colors, brand language must appear consistently across all slides. Every slide should feel instantly recognizable.' }
+            },
+            nicheArchetypes: {
+                travel: 'Monocle magazine city guides aesthetic, Airbnb Design System editorial overlay, Aman Resorts brand identity',
+                culinary: 'Kinfolk magazine table spreads, Noma restaurant aesthetic, Bon Appétit premium editorial photography',
+                fashion: 'Céline Phoebe Philo era campaigns, SSENSE brutalist e-commerce logic, Vogue Paris editorial spreads',
+                property: 'Architectural Digest interior features, modern real estate brochure with bold geometric shapes, minimalist Swiss real estate layouts',
+                tech: 'Apple Human Interface Guidelines (HIG) precision, Stripe landing page aesthetic, futuristic startup bento-box UI',
+                beauty: 'Aesop branding packaging layout, Glossier minimal editorial, Byredo typography-led campaigns',
+                education: 'MasterClass premium cinematic aesthetic, modern educational app bento-box UI, minimalist infographic posters',
+                other: 'Pentagram agency portfolio aesthetic, Massimo Vignelli New York subway system logic, Dieter Rams Braun design principles'
+            },
+            styleLabels: {
+                'modern-minimal': 'Clean vector geometry, floating white UI cards with soft drop shadows (Bento-box style), rounded corners, massive negative space, strict 12-column grid system.',
+                'bold-graphic': 'High-contrast striking composition, geometric photo masks (arches, diagonal cuts, polygons), brutalist typography, dynamic overlapping elements, bold solid color blocking.',
+                'warm-editorial': 'Asymmetrical golden ratio composition, classic 6-column text grid, natural analog film grain overlay, warm color grading LUT (5500K+), flush-left ragged-right typography.',
+                'luxury': 'Center-axis symmetrical alignment, high-end negative space distribution, deep matte backgrounds (#0A0A0A), metallic foil-like visual accents, high-contrast serif typography.',
+                'playful-pop': 'Vibrant UI elements, 3D floating objects (glassmorphism/claymorphism), overlapping rounded badges, wavy seamless background patterns connecting frames.',
+                'corporate-clean': 'Grid-locked B2B aesthetic, left-aligned typography, modular bento-box spatial divisions, cool-toned neutral palette (4000K), high-readability sans-serif (WCAG AAA minimum).'
+            },
+            platformSpecs: { instagram:'Instagram Feed', linkedin:'LinkedIn Post', tiktok:'TikTok Slides', facebook:'Facebook Post' },
+            colorPalettes: {
+                midnight: { p: 'Obsidian Black #0A0A0A', s: 'Graphite #1C1C1E', a: 'Platinum #E5E5EA', b: 'Matte Charcoal #121212', h: 'Off-White #F8F8F7' },
+                ocean: { p: 'Deep Navy #0D1B2A', s: 'Slate Blue #1B263B', a: 'Electric Cyan #00E5FF', b: 'Midnight Blue #070D14', h: 'Ice White #F0F4F8' },
+                forest: { p: 'Pine Green #0A2218', s: 'Moss #1B3B2B', a: 'Mint #98FF98', b: 'Deep Emerald #04140E', h: 'Ivory #FFFFF0' },
+                terracotta: { p: 'Burnt Clay #A04028', s: 'Rust #7A2E1A', a: 'Warm Sand #E6CBB8', b: 'Deep Brown #1A0F0A', h: 'Soft Cream #FDFBF7' },
+                blush: { p: 'Dusty Rose #B57F86', s: 'Muted Mauve #8B5F65', a: 'Lavender #C8A2C8', b: 'Warm Grey #232021', h: 'Rose White #FFF0F5' },
+                golden: { p: 'Rich Bronze #8C6239', s: 'Dark Taupe #4A3B2C', a: 'Champagne #F7E7CE', b: 'Deep Espresso #1A120B', h: 'Cream #FFFDD0' },
+                violet: { p: 'Deep Indigo #1A1025', s: 'Dark Plum #2D1B36', a: 'Neon Violet #8A2BE2', b: 'Abyssal Purple #0D0514', h: 'Starlight #F8F8FF' },
+                cream: { p: 'Oatmeal #E6DFD3', s: 'Warm Taupe #BCAAA4', a: 'Soft Caramel #D4A373', b: 'Off-White #F5F0E8', h: 'Pure White #FFFFFF' },
+                custom: { p: 'Brand Primary (Non-pure hex)', s: 'Brand Secondary', a: 'High-Contrast Accent', b: 'Matte Base (Non-pure #000000)', h: 'Vibrant Highlight (Non-pure #FFFFFF)' }
+            },
+            headlineStyles: {
+                direct: 'Direct Response (Bold Statement + Commercial. Clear offers, benefit-driven, high impact, conversion-focused.)',
+                premium: 'Premium (Luxury Branding + Corporate Premium + Minimal Modern. Elegant, sophisticated, aspirational, trustworthy.)',
+                editorial: 'Editorial (Editorial Magazine. Fashion/editorial inspired, storytelling, refined, high-end.)',
+                viral: 'Viral (Viral Social + Futuristic Tech. Attention-grabbing, highly shareable, innovative, strong hooks.)'
+            },
+            complexityData: {
+                simple: { title: 'Simple', characteristics: 'Massive hero visual, very few elements, extremely clean layout, heavy negative space. Suitable for premium and luxury.' },
+                balanced: { title: 'Balanced', characteristics: 'Hero visual supported by 3-5 supporting UI cards/elements. Balanced typography and imagery. Perfect for most businesses.' },
+                rich: { title: 'Rich', characteristics: 'High visual information density. Include pricing cards, comparison tables, badges, benefit cards, or data cards. Suitable for promos and marketplaces.' }
+            },
+            recognitionData: {
+                known: { title: 'Known Brand', rule: 'This is a well-known global/major brand. You MAY utilize your internal knowledge of their visual identity, guidelines, and historical campaigns.' },
+                local: { title: 'Local Brand', rule: 'This is a local brand or SME. You MUST NOT assume their visual identity. Rely strictly on the uploaded brand assets.' },
+                new: { title: 'New Brand', rule: 'This is a new brand. You MUST strictly rely on uploaded assets or build the visual system purely from the prompt instructions without assumptions.' }
+            }
+        };
+
+        const STATE = {
+            brandName: '', headline: '', niche: 'travel', goal: 'awareness', positioning: 'premium',
+            emotion: 'trust', visualFocus: 'product', complexity: 'balanced', recognition: 'local',
+            slideCount: 6, photos: [],
+            productDesc: '', benefits: '', cta: '',
+            platform: 'instagram', ratio: '1:1', style: 'modern-minimal', color: 'midnight',
+            headlineStyle: 'direct', assetMode: 'brand',
+            toggles: { 'opt-body': true, 'opt-icons': true, 'opt-photo': true, 'opt-font': true },
+            
+            // Rendered output memory
+            currentResponse: null
+        };
+
+        class AppHelper {
+            static escapeHtml(unsafe) {
+                return (unsafe || "").toString()
+                     .replace(/&/g, "&amp;")
+                     .replace(/</g, "&lt;")
+                     .replace(/>/g, "&gt;")
+                     .replace(/"/g, "&quot;")
+                     .replace(/'/g, "&#039;");
+            }
+
+            static getDimensions(ratio) {
+                if(ratio === '1:1') return {w: 1080, h: 1080};
+                if(ratio === '4:5') return {w: 1080, h: 1350};
+                if(ratio === '9:16') return {w: 1080, h: 1920};
+                return {w: 1080, h: 1080};
+            }
+
+            static getCampaignFlow(goal, count, assetMode) {
+                const stages = {
+                    attention: { v: 'hero', n: 'ATTENTION', q: 'Why should I care?' },
+                    problem: { v: 'problem', n: 'PROBLEM', q: 'Is this related to me?' },
+                    solution: { v: 'solution', n: 'SOLUTION', q: 'What is the solution?' },
+                    benefits: { v: 'feature', n: 'BENEFITS', q: 'What do I gain?' },
+                    mechanism: { v: 'info', n: 'MECHANISM', q: 'How does it work?' },
+                    offer: { v: 'feature', n: 'OFFER / PACKAGE', q: 'What can I buy?' },
+                    differentiator: { v: 'info', n: 'DIFFERENTIATOR', q: 'Why choose this brand?' },
+                    proof: { v: 'testimonial', n: 'SOCIAL PROOF', q: 'Has this worked for others?' },
+                    objection: { v: 'problem', n: 'OBJECTION HANDLER', q: 'What is stopping me?' },
+                    cta: { v: 'cta', n: 'CALL TO ACTION', q: 'What should I do next?' }
+                };
+
+                let flow = [];
+                if (count >= 10) {
+                    flow = [stages.attention, stages.problem, stages.solution, stages.benefits, stages.mechanism, stages.offer, stages.differentiator, stages.proof, stages.objection, stages.cta];
+                } else if (count === 9) {
+                    flow = [stages.attention, stages.problem, stages.solution, stages.benefits, stages.mechanism, stages.offer, stages.differentiator, stages.proof, stages.cta];
+                } else if (count === 8) {
+                    flow = [stages.attention, stages.problem, stages.solution, stages.benefits, stages.mechanism, stages.offer, stages.proof, stages.cta];
+                } else if (count === 7) {
+                    flow = [stages.attention, stages.problem, stages.solution, stages.benefits, stages.offer, stages.proof, stages.cta];
+                } else if (count === 6) {
+                    flow = [stages.attention, stages.problem, stages.solution, stages.benefits, stages.proof, stages.cta];
+                } else if (count <= 5) {
+                    flow = [stages.attention, stages.problem, stages.solution, stages.proof, stages.cta];
+                }
+
+                while(flow.length < count) {
+                    flow.splice(flow.length - 1, 0, { v: 'info', n: 'VALUE EXPANSION', q: 'Tell me more.' });
+                }
+
+                // If Brand Asset Mode is active, prepend the Discovery Slide as Slide 1
+                if (assetMode === 'brand') {
+                    flow.unshift({ v: 'discovery', n: 'BRAND ASSET DISCOVERY', q: 'System Setup', badge: 'setup' });
+                }
+
+                return flow.map(f => ({ type: f.v, label: f.n, q: f.q, badge: f.v }));
+            }
+        }
+
+        // ==========================================
+        // LOCAL FALLBACK ENGINE (Generates Prompts Synchronously)
+        // ==========================================
+        class FallbackEngine {
+            static generate(state) {
+                const flow = AppHelper.getCampaignFlow(state.goal, state.slideCount, state.assetMode);
+                
+                const slides = flow.map((f, idx) => {
+                    const promptText = this.buildSlidePromptString(f, idx + 1, flow.length, state);
+                    return {
+                        slideNumber: idx + 1,
+                        slideType: f.type,
+                        label: f.label,
+                        badge: f.badge,
+                        fullPromptText: promptText
+                    };
+                });
+                
+                return { slides: slides, flow: flow };
+            }
+
+            static buildSlidePromptString(f, idx, total, state) {
+                let type = f.type;
+                let narrative = f.label;
+                const dim = AppHelper.getDimensions(state.ratio);
+                const cp = DATA.colorPalettes[state.color];
+                const posData = DATA.positioningData[state.positioning];
+                const emo = DATA.emotionData[state.emotion];
+                const vf = DATA.visualFocusData[state.visualFocus];
+                const compData = DATA.complexityData[state.complexity];
+                const recData = DATA.recognitionData[state.recognition];
+
+                if (type === 'discovery') {
+                    return `[SYSTEM INSTRUCTION FOR AI - BRAND ASSET DISCOVERY]
+DO NOT generate a carousel image yet.
+
+Instead, you must first request brand assets from the user.
+
+Request the following:
+1. Logo brand
+2. Foto produk
+3. Foto tim
+4. Foto founder
+5. Screenshot aplikasi/dashboard
+6. Website brand
+7. Sosial media brand
+8. Packaging
+9. Brosur atau materi promosi
+10. Referensi visual yang disukai
+
+After receiving the uploaded assets:
+1. Analyze all assets.
+2. Create a Brand Memory Profile.
+3. Identify:
+   - Brand colors
+   - Logo structure
+   - Product appearance
+   - Packaging appearance
+   - Team members
+   - Founder identity
+   - Visual style
+   - Typography style
+   - Industry positioning
+
+4. Store these findings as persistent context for all following slides in the same conversation.
+5. Do not ask for assets again on Slide 2, Slide 3, Slide 4, Slide 5, Slide 6, Slide 7, Slide 8, Slide 9, or Slide 10.
+6. All future slides must use the analyzed assets as primary references.
+7. If human photos are uploaded:
+   - Preserve identity.
+   - Preserve facial structure.
+   - Preserve age appearance.
+   - Preserve recognizable characteristics.
+   - Only change pose, camera angle, clothing style, expression, lighting, or scene if required.
+8. Never replace uploaded people with new AI-generated people.
+9. Never replace uploaded products with generic AI products.
+10. Never redesign uploaded logos.
+
+Output only:
+"Brand Assets Received and Analyzed Successfully. Ready for Slide 2."
+
+Then wait for the next slide prompt.`;
+                }
+                
+                let recAssets = "Brand Logo";
+                if(type === 'hero' || type === 'cta') recAssets = "Brand Logo, Founder Photo, or Primary Product Image";
+                if(narrative.includes('PROBLEM') || narrative.includes('OBJECTION')) recAssets = "Authentic human expressions, Emotional/real-world scenarios, or Founder Photo";
+                if(narrative.includes('SOLUTION') || narrative.includes('BENEFITS') || narrative.includes('OFFER')) recAssets = "Product Images, Dashboard Screenshots, or Portfolio Showcase";
+                if(narrative.includes('MECHANISM') || narrative.includes('DIFFERENTIATOR')) recAssets = "Dashboard Screenshots, Team Photos, or Product details";
+                if(narrative.includes('PROOF')) recAssets = "Team Photos, Portfolio, Client Results, or Founder Photo";
+
+                let s_obj = "", v_obj = "", c_obj = "", l_dir = "", p_dir = "", t_dir = "", cta_dir = "None (Do not include a CTA button on this slide).";
+                let bodyTexts = state.toggles['opt-body'] ? "Include short supporting paragraph text formatted cleanly inside the UI card." : "Keep text absolutely minimal. No supporting paragraphs.";
+
+                switch(type) {
+                    case 'hero':
+                        s_obj = `Stop scrolling immediately. Pattern interrupt. Answer the question: "${f.q}"`;
+                        v_obj = `Create a powerful visual hook that radiates a [${emo.title}] aura. ONE HERO ELEMENT (${vf.title}) must dominate the slide. Complexity Level: ${compData.title}.`;
+                        c_obj = `Deliver a bold, non-cliché headline based on: "${state.headline}". ${bodyTexts}`;
+                        l_dir = `Full-bleed layout. 12-column grid. Dynamic Z-pattern reading flow. Include a seamless bleed element (e.g., shape or wave in ${cp.p} or ${cp.a}) cut off exactly at the right edge to connect to Slide 2.`;
+                        p_dir = `${emo.photo}. 35mm focal length perspective. Sharp subject, mood ${emo.mood}. Mask photography inside a dynamic geometric vector shape.`;
+                        t_dir = `${posData.typography}. Display Scale (96-120px) with Black (900) weight. High contrast.`;
+                        cta_dir = `Include a subtle directional cue (e.g., small arrow or "SWIPE" tag) leading right.`;
+                        break;
+                    case 'problem':
+                        s_obj = `Create relevance and acknowledge the pain point. Answer the question: "${f.q}"`;
+                        v_obj = `Communicate the challenge with a [${emo.mood}] mood. Keep visual hierarchy firmly led by [${vf.title}].`;
+                        c_obj = `State the problem or challenge clearly in a ${posData.headlineStyle} style. ${bodyTexts}`;
+                        l_dir = `Bento-box / modular card layout. Text inside a floating UI container. Seamless background pattern extending to the right frame.`;
+                        p_dir = `Desaturated/muted photography matching [${emo.photo}], housed in a circular badge or rounded rectangle element.`;
+                        t_dir = `Bold (900) headline. 18px Regular (400) body text with 1.6 leading.`;
+                        break;
+                    case 'solution':
+                        s_obj = `Introduce the core solution or product. Answer the question: "${f.q}"`;
+                        v_obj = `The 'Aha!' moment. Product/Service breaks the grid (pop-out effect). Bright, hopeful energy matching [${emo.title}]. Complexity Level: ${compData.title}.`;
+                        c_obj = `Present ${state.brandName} as the ultimate answer in a ${posData.headlineStyle} style. ${bodyTexts}`;
+                        l_dir = `Center stage architecture or overlapping UI cards. Generous whitespace (${posData.layout}). Seamless circular curve bleeding off the right edge.`;
+                        p_dir = `Crisp, bright hero shot (${emo.photo}). Transparent background (PNG feel) to merge directly with the design.`;
+                        t_dir = `Optimistic Display Scale (96px) headline overlapping negative space.`;
+                        break;
+                    case 'feature':
+                        s_obj = `Show outcomes and detailed value. Answer the question: "${f.q}"`;
+                        v_obj = `Present detailed features/benefits cleanly while maintaining [${emo.title}] mood.`;
+                        c_obj = `Detail the specific features, benefits, USP (${state.benefits}), or packages clearly. ${bodyTexts}`;
+                        l_dir = `Mathematical Bento-box modular grid. 2-3 UI cards with rounded corners. Minimum 64px outer margins. Horizon line bleeds to the next slide.`;
+                        p_dir = `Macro detail shots masked perfectly to fit the Bento grid boxes.`;
+                        t_dir = `12px All-Caps tags above 32px Subheadings. Clean, structured.`;
+                        break;
+                    case 'info':
+                        s_obj = `Explain process, workflow, or USP clearly. Answer the question: "${f.q}"`;
+                        v_obj = `Educational data visualization or timeline using premium UI elements.`;
+                        c_obj = `Explain 3 specific steps or facts. Target style: ${posData.headlineStyle}. ${bodyTexts}`;
+                        l_dir = `Stepped grid or stacked horizontal UI cards. Diagonal Z-pattern eye flow. Flow lines bleeding off the right edge.`;
+                        p_dir = `Fullscreen dimmed architectural or lifestyle background to make UI text pop.`;
+                        t_dir = `Giant numbers or stats (120px+) in accent color. Highly legible.`;
+                        break;
+                    case 'testimonial':
+                        s_obj = `Build undeniable trust using evidence. Answer the question: "${f.q}"`;
+                        v_obj = `Editorial high-end social proof. Hero element is a giant floating review card.`;
+                        c_obj = `Display a powerful customer quote/result. Include a 5-star rating graphic.`;
+                        l_dir = `Centered giant floating card over the primary color background. Heavy internal padding. Background pattern fading out toward the right.`;
+                        p_dir = `Reviewer avatar in a perfect circle crop, slightly overlapping the top edge of the UI card.`;
+                        t_dir = `Elegant Serif or bold Sans-Serif (32px, 1.4 leading) for the quote. 14px All-Caps Bold for the name.`;
+                        break;
+                    case 'cta':
+                        s_obj = `Drive direct action and conversion. Answer the question: "${f.q}"`;
+                        v_obj = `Terminal conversion slide. Everything points to the massive UI button.`;
+                        c_obj = `Urgent, compelling conversion headline. Target style: ${posData.headlineStyle}.`;
+                        l_dir = `Target layout. Background shapes narrow towards the bottom center. Closed composition on the right edge (NO bleed).`;
+                        p_dir = `Heavy blurred background or ultra-clean solid color to maximize button contrast.`;
+                        t_dir = `Massive urgency headline (96px). Thick, bold CTA button text.`;
+                        cta_dir = `Place a glowing, high-contrast Pill-shaped UI Button dead center or bottom center. Include vector cursor pointing at it with text: "${state.cta || 'ACTION HERE'}".`;
+                        break;
+                    default:
+                        s_obj = `Communicate value efficiently. Answer the question: "${f.q}"`;
+                        v_obj = `Clean representation of information following ${vf.title} rules.`;
+                        c_obj = `Provide required details clearly.`;
+                        l_dir = `Structured grid layout. Consistent margins.`;
+                        p_dir = `Clean supporting imagery.`;
+                        t_dir = `Readable structure.`;
+                        break;
+                }
+
+                let a_dir = "";
+                if (state.assetMode === 'brand') {
+                    a_dir = `[ASSET CONTINUITY ENGINE]\nRefer to the Brand Memory Profile established in Slide 1.\n- Use the analyzed uploaded assets as primary visual references.\n- Maintain consistent visual language, color palette, and branding with previous slides.\n- Preserve human identity, logo shape/colors, packaging, product appearance.\nRecommended Assets to feature on this slide: ${recAssets}`;
+                } else {
+                    a_dir = `[AI VISUAL MODE]\nGenerate high-quality, brand-aligned visual elements from scratch based on the Visual Focus and Emotional Angle. Ensure strict visual consistency with previous slides.`;
+                }
+
+                return `DO NOT generate a multi-slide carousel prompt. This is an independent prompt for Slide ${idx} of ${total} (${dim.w}x${dim.h}px).
+
+[OUTPUT PRIORITY ENGINE]
+If rules conflict, resolve them in this exact order of priority:
+1. Brand Asset (Highest Priority)
+2. Brand Positioning
+3. Campaign Goal
+4. Emotional Angle
+5. Visual Focus
+6. Visual Complexity
+7. Design Style
+8. Color Scheme
+
+[SHARED CAMPAIGN DNA]
+- Brand Identity: ${state.brandName}
+- Brand Recognition Rule: ${recData.rule}
+- Positioning Tier: ${posData.title} (${posData.tone})
+- Design Style & Architecture: ${DATA.styleLabels[state.style]}
+- Visual Focus Engine: ${vf.rules}
+- Visual Complexity: ${compData.characteristics}
+- Color System: Primary (${cp.p}), Accent (${cp.a}), Background (${cp.b}). Strictly limit to these.
+- Global Typography: ${posData.typography}
+- Consistency Rule: Apply this exact visual language, spacing philosophy, and art direction to feel connected to the rest of the campaign.
+
+[UNIQUE SLIDE RULE: ${narrative}]
+1. Slide Objective:
+${s_obj}
+
+2. Visual Objective:
+${v_obj}
+
+3. Content Objective:
+${c_obj}
+
+4. Layout Direction:
+${l_dir}
+
+5. Photography Direction:
+${p_dir}
+
+6. Typography Direction:
+${t_dir}
+
+7. Asset Usage Direction:
+${a_dir}
+
+8. CTA Direction:
+${cta_dir}`;
+            }
+        }
+
+        // ==========================================
+        // PROMPT API SERVICE (Simulates Backend Call)
+        // ==========================================
+        class PromptAPI {
+            static async fetchPrompts(state) {
+                const apiKey = ""; // API integration point
+                
+                // If no API key is provided, we intentionally throw to trigger the fallback engine
+                // This ensures "Response Architecture" is robust and handles failures elegantly.
+                if (!apiKey) {
+                    throw new Error("NO_API_KEY");
+                }
+
+                throw new Error("API_NOT_IMPLEMENTED_YET");
+            }
+        }
+
+        // ==========================================
+        // VALIDATION LAYER
+        // ==========================================
+        class ValidationLayer {
+            static validate(data) {
+                if (!data || typeof data !== 'object') {
+                    throw new Error("Invalid response format: Not an object");
+                }
+                
+                if (!Array.isArray(data.slides)) {
+                    throw new Error("Invalid response format: 'slides' array missing");
+                }
+
+                if (data.slides.length === 0) {
+                    throw new Error("Invalid response format: 'slides' array is empty");
+                }
+
+                // Sanitize and ensure required properties exist
+                data.slides = data.slides.map((slide, index) => {
+                    return {
+                        slideNumber: slide.slideNumber || index + 1,
+                        label: slide.label || `SLIDE ${index + 1}`,
+                        badge: slide.badge || 'INFO',
+                        fullPromptText: slide.fullPromptText || "Prompt generation failed for this slide."
+                    };
+                });
+
+                return data;
+            }
+        }
+
+        // ==========================================
+        // UI CONTROLLER
+        // ==========================================
+        class CarouselApp {
+            
+            static initUI() {
+                // Setup listeners
+                const containerIds = ['positioningGrid', 'recognitionGrid', 'goalGrid', 'emotionPills', 'visualFocusGrid', 'complexityGrid', 'nicheGrid', 'slidePills', 'platformPills', 'ratioCards', 'styleGrid', 'colorPicker', 'headlineStyleGrid', 'assetModeGrid'];
+                
+                containerIds.forEach(id => {
+                    const container = document.getElementById(id);
+                    if(!container) return;
+                    const items = container.querySelectorAll('.pill, .selectable-card, .ratio-card, .color-circle');
+                    items.forEach(item => {
+                        item.addEventListener('click', () => {
+                            items.forEach(i => i.classList.remove('active'));
+                            item.classList.add('active');
+                            const key = id.replace('Grid', '').replace('Pills', '').replace('Cards', '').replace('Picker', '');
+                            // Mapping HTML IDs to state keys
+                            const stateMap = {
+                                'positioning': 'positioning', 'recognition': 'recognition', 'goal': 'goal', 'emotion': 'emotion', 
+                                'visualFocus': 'visualFocus', 'complexity': 'complexity', 'niche': 'niche', 'slide': 'slideCount', 
+                                'platform': 'platform', 'ratio': 'ratio', 'style': 'style', 
+                                'color': 'color', 'headlineStyle': 'headlineStyle', 'assetMode': 'assetMode'
+                            };
+                            if(stateMap[key]) {
+                                STATE[stateMap[key]] = item.getAttribute('data-val');
+                                if(key === 'slide') STATE[stateMap[key]] = parseInt(item.getAttribute('data-val'));
+                            }
+                        });
+                    });
+                });
+
+                // File Upload setup
+                const fileInput = document.getElementById('fileInput');
+                if(fileInput) {
+                    fileInput.addEventListener('change', (e) => {
+                        const files = Array.from(e.target.files);
+                        files.forEach(file => {
+                            if(file.size > 5 * 1024 * 1024) {
+                                alert(`File ${file.name} terlalu besar (>5MB)`);
+                                return;
+                            }
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                                STATE.photos.push({ name: file.name, data: event.target.result });
+                                this.renderPhotos();
+                            };
+                            reader.readAsDataURL(file);
+                        });
+                        fileInput.value = '';
+                    });
+                }
+            }
+
+            static updateCharCount(id, max, warningLevel = 0) {
+                const val = document.getElementById(id).value;
+                const counter = document.getElementById(`${id}-count`);
+                if(!counter) return;
+                counter.innerText = `${val.length} / ${max}`;
+                if(warningLevel > 0 && val.length > warningLevel) {
+                    counter.classList.add('warning');
+                } else {
+                    counter.classList.remove('warning');
+                }
+            }
+
+            static toggleSwitch(el) {
+                el.classList.toggle('active');
+                const id = el.getAttribute('data-id');
+                STATE.toggles[id] = el.classList.contains('active');
+            }
+
+            static renderPhotos() {
+                const list = document.getElementById('photoList');
+                if(!list) return;
+                list.innerHTML = '';
+                STATE.photos.forEach((photo, idx) => {
+                    list.innerHTML += `
+                        <div class="photo-item">
+                            <div class="photo-info">
+                                <img src="${photo.data}" class="photo-thumb" alt="thumb">
+                                <span class="photo-name">${AppHelper.escapeHtml(photo.name)}</span>
+                                <span class="photo-badge">Foto ${idx + 1}</span>
+                            </div>
+                            <button class="btn-remove" onclick="CarouselApp.removePhoto(${idx})">×</button>
+                        </div>
+                    `;
+                });
+            }
+
+            static removePhoto(idx) {
+                STATE.photos.splice(idx, 1);
+                this.renderPhotos();
+            }
+
+            // Core Execution Method
+            static async handleGenerate() {
+                // Update State from DOM inputs
+                STATE.brandName = document.getElementById('brandName').value.trim();
+                STATE.headline = document.getElementById('headline').value.trim();
+                STATE.productDesc = document.getElementById('productDesc').value.trim();
+                STATE.benefits = document.getElementById('benefits').value.trim();
+                STATE.cta = document.getElementById('cta').value.trim();
+
+                // Simple form validation
+                if(!STATE.brandName && !STATE.headline && !STATE.productDesc) {
+                    alert("Harap isi minimal Nama Brand, Headline, dan Deskripsi Produk!");
+                    return;
+                }
+
+                const btn = document.getElementById('generateBtn');
+                btn.classList.add('loading');
+                btn.disabled = true;
+                
+                this.hideError();
+
+                // Simulating network delay for backend architecture
+                setTimeout(async () => {
+                    let rawData;
+                    
+                    try {
+                        // 1. Attempt API Generation (Simulated backend fetch)
+                        rawData = await PromptAPI.fetchPrompts(STATE);
+                    } catch (apiError) {
+                        // 2. Fallback Engine kicks in immediately on API failure
+                        console.warn("API Call Failed / Unavailable, utilizing Robust Fallback Engine:", apiError.message);
+                        rawData = FallbackEngine.generate(STATE);
+                    }
+
+                    try {
+                        // 3. Validation Layer verifies data integrity
+                        const validatedData = ValidationLayer.validate(rawData);
+                        
+                        // 4. Update Memory and Render UI
+                        STATE.currentResponse = validatedData;
+                        this.renderOutput(validatedData);
+
+                        document.getElementById('emptyState').style.display = 'none';
+                        document.getElementById('outputContent').classList.add('visible');
+                    } catch (validationError) {
+                        console.error("Data Validation Failed:", validationError);
+                        this.showError("Terjadi kesalahan sistem saat memproses data. Silakan coba lagi.");
+                    } finally {
+                        btn.classList.remove('loading');
+                        btn.disabled = false;
+                    }
+                }, 800); // 800ms artificial delay to represent fetching
+            }
+
+            static renderOutput(data) {
+                const { slides, flow } = data;
+                
+                // Update Meta Info
+                const metaEl = document.getElementById('outMetaInfo');
+                if(metaEl) {
+                    metaEl.innerText = `${STATE.slideCount} Slide • Kampanye: ${document.querySelector('.selectable-card[data-val="'+STATE.goal+'"] .card-title').innerText} • Tier: ${DATA.positioningData[STATE.positioning].title}`;
+                }
+
+                // Render Flow Preview
+                const flowEl = document.getElementById('flowPreview');
+                if(flowEl && flow) {
+                    let flowHTML = '';
+                    flow.forEach((f, idx) => {
+                        flowHTML += `
+                            <div class="flow-step">
+                                <div class="flow-chip">
+                                    <div class="flow-num">${idx + 1}</div>
+                                    <div class="flow-label">${AppHelper.escapeHtml(f.label.split(' (')[0])}</div>
+                                </div>
+                                ${idx < flow.length - 1 ? '<div class="flow-arrow">→</div>' : ''}
+                            </div>
+                        `;
+                    });
+                    flowEl.innerHTML = flowHTML;
+                }
+
+                // Render Slide Prompts
+                const slideListEl = document.getElementById('slideList');
+                if(slideListEl) {
+                    let slidesHTML = '';
+
+                    slides.forEach((slide, idx) => {
+                        let headerBgClass = slide.slideType === 'discovery' ? 'bg-setup' : `bg-${slide.badge}`;
+                        let isSetup = slide.slideType === 'discovery';
+                        
+                        slidesHTML += `
+                            <div class="slide-card" ${isSetup ? 'style="border-color: var(--accent);"' : ''}>
+                                <div class="slide-header" ${isSetup ? 'style="background: var(--accent-light);"' : ''}>
+                                    <div class="slide-num-box" ${isSetup ? 'style="background: var(--accent); color: var(--bg-dark);"' : ''}>${slide.slideNumber}</div>
+                                    <div class="slide-name">${AppHelper.escapeHtml(slide.label)}</div>
+                                    <div class="badge ${headerBgClass}">${(slide.badge || 'INFO').toUpperCase()}</div>
+                                </div>
+                                <div class="slide-body">
+                                    <button class="btn-copy-small" onclick="CarouselApp.copySinglePrompt('prompt-${idx}', this)">Salin</button>
+                                    <pre class="slide-prompt" id="prompt-${idx}" ${isSetup ? 'style="color: var(--accent);"' : ''}>${AppHelper.escapeHtml(slide.fullPromptText)}</pre>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    slideListEl.innerHTML = slidesHTML;
+                }
+            }
+
+            static showError(msg) {
+                const banner = document.getElementById('errorBanner');
+                const message = document.getElementById('errorMessage');
+                if(banner && message) {
+                    message.innerText = msg;
+                    banner.classList.add('visible');
+                }
+            }
+
+            static hideError() {
+                const banner = document.getElementById('errorBanner');
+                if(banner) banner.classList.remove('visible');
+            }
+
+            // Clipboard Logic
+            static fallbackCopyTextToClipboard(text) {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.top = "0";
+                textArea.style.left = "0";
+                textArea.style.position = "fixed";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                } catch (err) {
+                    console.error('Gagal menyalin teks: ', err);
+                }
+                document.body.removeChild(textArea);
+            }
+
+            static copySinglePrompt(id, btn) {
+                const textEl = document.getElementById(id);
+                if(!textEl) return;
+                
+                this.fallbackCopyTextToClipboard(textEl.innerText);
+                
+                const originalText = btn.innerText;
+                btn.innerText = "Disalin!";
+                btn.style.background = "rgba(34, 197, 94, 0.3)";
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.style.background = "";
+                }, 1500);
+            }
+
+            static copyAll() {
+                if (!STATE.currentResponse || !STATE.currentResponse.slides) {
+                    alert("Belum ada prompt yang di-generate.");
+                    return;
+                }
+                
+                let fullText = "";
+
+                STATE.currentResponse.slides.forEach((slide) => {
+                    fullText += `━━━━━━━━━━━━━━━━━━\n\nSLIDE ${slide.slideNumber} PROMPT\n\n${slide.fullPromptText}\n\n`;
+                });
+                fullText += `━━━━━━━━━━━━━━━━━━`;
+
+                this.fallbackCopyTextToClipboard(fullText);
+                alert("Seluruh prompt slide independen berhasil disalin ke clipboard!");
+            }
+        }
+
+        // Initialize App on DOM Content Loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            CarouselApp.initUI();
+        });
+
+    </script>
+</body>
+</html>
