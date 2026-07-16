@@ -1013,9 +1013,13 @@
                 const vf = DATA.visualFocusData[state.visualFocus];
                 const compData = DATA.complexityData[state.complexity];
                 const recData = DATA.recognitionData[state.recognition];
+                
+                // Calculate massive canvas size for the Continuity Blueprint
+                const massiveWidth = dim.w * (state.assetMode === 'brand' ? total - 1 : total);
+                const internalCanvas = `${massiveWidth} × ${dim.h} px`;
 
                 if (type === 'discovery') {
-                    return `[SYSTEM INSTRUCTION FOR AI - BRAND ASSET DISCOVERY]
+                    return `[SYSTEM INSTRUCTION FOR AI - BRAND ASSET DISCOVERY & V3 MASTER ENGINE INITIALIZATION]
 DO NOT generate a carousel image yet.
 
 Instead, you must first request brand assets from the user.
@@ -1036,31 +1040,27 @@ After receiving the uploaded assets:
 1. Analyze all assets.
 2. Create a Brand Memory Profile.
 3. Identify:
-   - Brand colors
-   - Logo structure
-   - Product appearance
-   - Packaging appearance
-   - Team members
-   - Founder identity
-   - Visual style
-   - Typography style
+   - Brand colors & typography style
+   - Logo structure & visual identity
+   - Product appearance & packaging
    - Industry positioning
 
-4. Store these findings as persistent context for all following slides in the same conversation.
-5. Do not ask for assets again on Slide 2, Slide 3, Slide 4, Slide 5, Slide 6, Slide 7, Slide 8, Slide 9, or Slide 10.
-6. All future slides must use the analyzed assets as primary references.
-7. If human photos are uploaded:
-   - Preserve identity.
-   - Preserve facial structure.
-   - Preserve age appearance.
-   - Preserve recognizable characteristics.
-   - Only change pose, camera angle, clothing style, expression, lighting, or scene if required.
-8. Never replace uploaded people with new AI-generated people.
-9. Never replace uploaded products with generic AI products.
-10. Never redesign uploaded logos.
+4. Establish the UPDATE ENGINE V3 — MASTER BACKGROUND CONTINUITY ENGINE:
+   - Visualize an internal MASTER BACKGROUND canvas size of ${internalCanvas}.
+   - You MUST design the entire background system, lighting, gradients, and textures on this massive canvas mentally first, before slicing it into individual slides.
+   - MASTER VISUAL LANGUAGE: Lock ONE visual language (e.g., Rounded Organic, Premium Wave).
+   - MASTER SHAPE SYSTEM: Lock ONE shape family. Do NOT introduce new shape families later.
+   - MASTER BACKGROUND PALETTE: Lock the base background color system.
+   - DECORATIVE SYSTEM LOCK: Lock ONE decorative system (e.g., Mesh Gradient, Dot Grid).
+   - LIGHTING LOCK: Lock ONE lighting direction and depth profile (shadows, blur, glow).
+   - MOTION DIRECTION: Lock ONE continuous visual flow direction (e.g., LEFT → RIGHT).
+
+5. Store these findings as persistent context for all following slides.
+6. Do not ask for assets again on subsequent slides.
+7. All future slides must use the analyzed assets as primary references, preserving human identities, products, and logos strictly.
 
 Output only:
-"Brand Assets Received and Analyzed Successfully. Ready for Slide 2."
+"Brand Assets Received and Analyzed Successfully. V3 Master Background Continuity Engine Initialized (${internalCanvas} Blueprint Locked). Ready for Slide 2."
 
 Then wait for the next slide prompt.`;
                 }
@@ -1153,16 +1153,31 @@ Then wait for the next slide prompt.`;
 
                 return `DO NOT generate a multi-slide carousel prompt. This is an independent prompt for Slide ${idx} of ${total} (${dim.w}x${dim.h}px).
 
+[UPDATE ENGINE V3 — MASTER BACKGROUND CONTINUITY ENGINE]
+STRICT RULE: This carousel MUST NOT look like ${total} separate posters. It MUST look like ONE massive continuous design sliced into panels. If placed side-by-side, the background MUST connect naturally.
+1. MASTER BACKGROUND BLUEPRINT: Mentally refer to your internal ${internalCanvas} master canvas. This slide is merely panel #${idx} sliced from that exact master background.
+2. MASTER VISUAL LANGUAGE & SHAPE SYSTEM: Strictly use the ONE visual language and ONE shape family locked for this carousel. DO NOT introduce new, unrelated shapes (e.g., do not switch from organic curves to sharp polygons).
+3. MASTER BACKGROUND PALETTE: The background base color and accent system MUST remain identical to all other slides. Only adjust intensity if absolutely necessary.
+4. FLOWING SHAPE & PANEL TRANSITION ENGINE: Shapes are in motion. A shape exiting the right edge of Slide ${idx-1} MUST perfectly continue into the left edge of this Slide ${idx}. Do not restart shapes every slide.
+5. MOTION DIRECTION ENGINE: All decorative elements and flows must follow the locked global direction (e.g., LEFT → RIGHT).
+6. DECORATIVE SYSTEM LOCK: Use the exact same decorative elements (e.g., Dot Pattern, Glass Cards) as previous slides.
+7. LIGHTING & DEPTH CONSISTENCY: Maintain the exact same lighting direction, shadow intensity, blur radius, glow strength, and contrast as all other slides. Do not make this slide randomly darker or flatter.
+8. NEGATIVE SPACE & VISUAL RHYTHM ENGINE: Distribute visual weight carefully. Ensure a comfortable rhythm without jarring changes in whitespace density between slides.
+
+[CONTINUITY VALIDATION]
+Before outputting, you MUST internally verify:
+✔ Background palette identical? ✔ Shape family identical? ✔ Decorative system identical? ✔ Lighting & Direction identical? ✔ Gradient, Shadow & Blur identical? ✔ Panel edges flow seamlessly into adjacent slides?
+If any answer is "No", fix the design before generating.
+
 [OUTPUT PRIORITY ENGINE]
-If rules conflict, resolve them in this exact order of priority:
-1. Brand Asset (Highest Priority)
-2. Brand Positioning
-3. Campaign Goal
-4. Emotional Angle
-5. Visual Focus
-6. Visual Complexity
-7. Design Style
-8. Color Scheme
+Follow this strict hierarchy of execution:
+1. Brand Asset Engine (Highest)
+2. Brand Identity Engine
+3. Background Continuity Engine (V3)
+4. Layout Engine
+5. Content Engine
+6. Typography Engine
+7. CTA Engine (Lowest)
 
 [SHARED CAMPAIGN DNA]
 - Brand Identity: ${state.brandName}
@@ -1173,7 +1188,6 @@ If rules conflict, resolve them in this exact order of priority:
 - Visual Complexity: ${compData.characteristics}
 - Color System: Primary (${cp.p}), Accent (${cp.a}), Background (${cp.b}). Strictly limit to these.
 - Global Typography: ${posData.typography}
-- Consistency Rule: Apply this exact visual language, spacing philosophy, and art direction to feel connected to the rest of the campaign.
 
 [UNIQUE SLIDE RULE: ${narrative}]
 1. Slide Objective:
